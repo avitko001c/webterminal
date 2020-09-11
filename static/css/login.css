@@ -394,9 +394,7 @@ table {
     border-collapse: collapse;
     border-spacing: 0;
 }
-</style>
 
-    <style>
 @import "https://fonts.googleapis.com/css?family=Ubuntu:400,700italic";
 @import "https://fonts.googleapis.com/css?family=Cabin:400";
 * {
@@ -476,12 +474,16 @@ Log in form
   box-shadow: 0 0 15px #74ebe6;
   border-radius: 5px;
   display: inline-block;
-  height: 220px;
+  height: 235px;
   margin: 270px auto 0;
   position: relative;
   z-index: 4;
   width: 500px;
   transition: 1s all;
+}
+a {
+  height:15px;
+  font-size:14px;
 }
 .stark-login form:hover {
   border: 6px solid #74ebe6;

@@ -4,9 +4,6 @@
 #
 # Modeled on the FTP storage by Rafal Jonca <jonca.rafal@gmail.com>
 from __future__ import print_function
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
 
 import getpass
 import os
@@ -23,6 +20,7 @@ from django.utils.six.moves.urllib import parse as urlparse
 
 from elfinder.sftpstoragedriver.utils import setting
 import traceback
+
 
 @deconstructible
 class SFTPStorage(Storage):
@@ -47,7 +45,8 @@ class SFTPStorage(Storage):
 
         self._root_path = setting('SFTP_STORAGE_ROOT', '') \
             if root_path is None else root_path
-        self._base_url = setting('MEDIA_URL') if base_url is None else base_url
+        self._base_url = setting(
+            'MEDIA_URL') if base_url is None else base_url
 
         # for now it's all posix paths.  Maybe someday we'll support figuring
         # out if the remote host is windows.
@@ -232,13 +231,15 @@ class SFTPStorageFile(File):
         if not self._is_read:
             self.file = self._storage._read(self._name)
             self._is_read = True
-
         return self.file.read(num_bytes)
 
     def write(self, content):
         if 'w' not in self._mode and 'a' not in self._mode:
             raise AttributeError("File was opened for read-only access.")
-        self.file = BytesIO(content)
+        try:
+            self.file = BytesIO(bytes(content,encoding = "utf8"))
+        except TypeError:
+            self.file = BytesIO(bytes(content))
         self._is_dirty = True
         self._is_read = True
 

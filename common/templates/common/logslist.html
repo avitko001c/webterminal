@@ -1,6 +1,8 @@
 {% extends 'base.html'%}
 {% load staticfiles %}
 {%load i18n%}
+{% load tz %}
+{% get_current_language as LANGUAGE_CODE %}
 {%block title%}{%trans 'Log list' %}{%endblock%}
 {% block css %}
 <link rel="stylesheet" href="{% static 'plugins/bootstrap-select/css/bootstrap-select.css' %} ">
@@ -9,12 +11,18 @@
 <link rel="stylesheet" href="{% static "plugins/datatables/dataTables.bootstrap.css" %}">
 <link rel="stylesheet" href="{% static "plugins/json-view/jquery.jsonview.min.css" %}">
 <link rel="stylesheet" href="{% static "plugins/bootstrap-dialog/css/bootstrap-dialog.css" %}">
+<!--video.js-->
+<link rel="stylesheet" href="{% static "plugins/video.js/video-js.min.css"  %}" >
 <style>
    .play-dialog .modal-dialog {
         width: 58%;
     }
     .large-dialog .modal-dialog {
         width: 1100px;
+        height: auto;
+    }
+    #playermodal .modal-dialog {
+        width: 60%;
         height: auto;
     }
 </style>
@@ -64,12 +72,16 @@
                             <td>{{ element.user.username }}</td>
                             <td>{{ element.server.name }}</td>
                             <td>{{ element.server.ip }}</td>
-                            <td>{{ element.start_time }}</td>
+                            <td>{{ element.start_time}}</td>
                             <td>{{ element.is_finished }}</td>
                             <td data-editable="false" class="text-center pull-left">
                                 {% if element.is_finished %}
                                 {% if perms.common.can_play_log %}
-                                    <a class="btn btn-xs btn-primary play" onclick="play('{{element.user.username}}','{{element.server.ip}}','{{element.start_time}}','{{element.start_time}}',{% if element.server.credential.protocol == 'ssh-password' or element.server.credential.protocol == 'ssh-key' %} '{% url 'sshlogplay' element.id %}' {% else %} '{% url 'guacamolelogplay' element.id %}' {% endif %} );">{%trans 'replay' %}</a>
+                                    {% if element.commercial_version %}
+                                    <a class="btn btn-xs btn-primary play" onclick="playauditvideo('{{element.user.username}}','{{element.server.ip}}','{{element.start_time}}','{{element.end_time}}','{{element.channel}}');">{%trans 'replay' %}</a>
+                                    {% else %}
+                                    <a class="btn btn-xs btn-primary play" onclick="play('{{element.user.username}}','{{element.server.ip}}','{{element.start_time}}','{{element.end_time}}',{% if element.server.credential.protocol == 'ssh-password' or element.server.credential.protocol == 'ssh-key' %} '{% url 'sshlogplay' element.id %}' {% else %} '{% url 'guacamolelogplay' element.id %}' {% endif %} );">{%trans 'replay' %}</a>
+                                {% endif %}
                                 {% endif %}
                                 {% else %}
                                 {% if perms.common.can_kill_serverinfo %}
@@ -93,6 +105,41 @@
         </div>
 
     </div>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="modal fade" id="playermodal" tabindex="-1" role="dialog" aria-labelledby="playermodal" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true" id="modalclosebutton">
+                                &times;
+                            </button>
+                            <h4 class="modal-title" id="playermodaltitle">
+                            </h4>
+                        </div>
+                        <div class="modal-body">
+                            <video
+                                    id="auditlogplay"
+                                    class="video-js"
+                                    controls
+                                    preload="auto"
+                                    poster="//vjs.zencdn.net/v/oceans.png"
+                                    data-setup='{}' style="width: 100%">
+                                <source src="//vjs.zencdn.net/v/oceans.mp4" type="video/mp4"></source>
+                                <p class="vjs-no-js">
+                                    To view this video please enable JavaScript, and consider upgrading to a
+                                    web browser that
+                                    <a href="https://videojs.com/html5-video-support/" target="_blank">
+                                        supports HTML5 video
+                                    </a>
+                                </p>
+                            </video>
+                        </div>
+                    </div><!-- /.modal-content -->
+                </div><!-- /.modal -->
+        </div>
+    </div>
+    </div>
 </section>
 {% endblock %}
 {% block js %}
@@ -107,7 +154,8 @@
 <script src="{% static "plugins/json-view/jquery.jsonview.min.js" %}"></script>
 <script src="{% static "plugins/bootstrap-dialog/js/bootstrap-dialog.js" %}"></script>
 <script src="{% static "plugins/bootbox/bootbox.js" %}"></script>
-
+<!--video.js-->
+<script src="{% static "plugins/video.js/video.min.js" %}"></script>
 
 <script type="application/javascript">
     $(function () {
@@ -262,33 +310,56 @@ function killguacamole(id,user_name) {
     });
 }
 function get_commands_detail(id) {
-    var dialog = bootbox.dialog({
-        title: '{%trans 'commands detail' %}',
-        message: '<p><i class="fa fa-spin fa-spinner"></i> {%trans 'Loading...' %}</p>'
-    });
-    dialog.init(function(){
-        $.ajax({
-            url: '{% url 'commandsloglist' %}',
-            type: 'POST',
-            data: {'id':id},
-            success: function(data, textStatus, jqXHR) {
-                if(data.status){
-                    dialog.find('.modal-body').css("height","300px").css("overflow-y","scroll").css("font-size","16px");
-                    var html = "";
-                    var data = data.message;
-                    for ( var i=0; i<data.length; i++ ) {
-                        html += data[i].datetime + " :  " + data[i].command  +"</br>"
-                    }
-                    dialog.find('.bootbox-body').html(html);
-                } else {
-                   toastr['error'](data.message);
+    $.ajax({
+        url: '{% url 'commandsloglist' %}',
+        type: 'POST',
+        data: {'id':id},
+        success: function(data, textStatus, jqXHR) {
+            if(data.status){
+                var dialog = bootbox.dialog({
+                    title: '{%trans 'commands detail' %}',
+                    message: '<p><i class="fa fa-spin fa-spinner"></i> {%trans 'Loading...' %}</p>'
+                });
+                dialog.find('.modal-body').css("height","300px").css("overflow-y","scroll").css("font-size","16px");
+                var html = "";
+                var data = data.message;
+                for ( var i=0; i<data.length; i++ ) {
+                    html += data[i].datetime + " :  " + data[i].command  +"</br>"
                 }
-            },
-            error: function(data, textStatus, jqXHR) {
-                toastr['error'](data);
+                dialog.find('.bootbox-body').html(html);
+            } else {
+                toastr['error'](data.message);
             }
-        });
+        },
+        error: function(data, textStatus, jqXHR) {
+            toastr['error'](data);
+        }
     });
+}
+function playauditvideo(user,ip,start_time,end_time,logid) {
+    var div_username = ' {% trans 'user' %}: '+'<span class="text-info">'+user+'' + '</span>';
+    var div_ip = ' {% trans 'server' %}: '+'<span class="text-info">' + ip + '</span>';
+    var div_time = ' {% trans 'start time' %}: ' + '<span class="text-info">'+start_time +'</span>' + ' {% trans 'end time' %}: ' +'<span class="text-info">' + end_time + '</span>';
+    var title = div_username + div_ip + div_time;
+    $('#playermodal').modal({backdrop: 'static', keyboard: false});
+    $('#playermodal').modal('show');
+    $("#playermodaltitle").empty().append(title);
+    video_path = window.location.origin + '/media/' + logid + '-000000'
+
+    var player = videojs('auditlogplay');
+    player.poster(video_path + '.png')
+    player.src({ type: "video/mp4", src: video_path + '.mp4' });
+    //api documents https://docs.videojs.com/docs/api/player.html
+
+    player.ready(function () {
+        player.play()
+    });
+    // player.on('ended',function () {
+    //     console.log('ended')
+    // })
+    $("#modalclosebutton").on('click',function () {
+        player.pause()
+    })
 }
 </script>
 {% endblock %}

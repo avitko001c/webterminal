@@ -5,6 +5,13 @@
 <head>
     <meta charset="UTF-8">
     <title>{% trans 'Webterminal Login' %}</title>
+    {% if otp_is_open %}
+    <style>
+        .stark-login form {
+              height: 315px !important;
+            }
+    </style>
+    {% endif %}
     <link rel="stylesheet" href="{% static 'css/login.css' %}">
 </head>
 
@@ -34,16 +41,18 @@
         {% endfor %}
 {% endif %}
 {% csrf_token %}
-<input type="text" name="username" id="id_username" placeholder="{% trans 'Username' %}" value="{% if form.username.value %}{{ form.username.value }}{% endif %}" autofocus required />
+<input type="text" name="username" id="id_username" placeholder="{% trans "Username" %}" value="{% if form.username.value %}{{ form.username.value }}{% endif %}" autofocus required />
 <input type="password" name="password" placeholder="{% trans 'Password' %}" id="id_password" required />
 <input type="hidden" name="next" value="{{ next }}" />
-<!--<input type="text" name="otp_token" placeholder="{% trans 'Token OTP' %}" id="otp_token"  />-->
-<!--{% if form.get_user %}-->
-<!--{{ form.otp_device.errors }}{{ form.otp_device }} -->
+{% if otp_is_open %}
+    <input type="text" name="otp_token" placeholder="{% trans 'Token OTP' %}" id="otp_token"  />
+    <p><h4>{% trans 'If you are first login to system and not configure otp just ignore otp token!' %}</h4></p>
+    <!--{% if form.get_user %}-->
+        <!--{{ form.otp_device.errors }}{{ form.otp_device }} -->
     <!--{% endif %}-->
-<!--{{ form.otp_token.errors }}-->
-
-{% csrf_token %} 
+    {{ form.otp_token.errors }}
+{% endif %}
+{% csrf_token %}
 <input type="submit" value="{% trans 'Log in' %}" />
 <select name="language" onchange="selectdo(this)">
                 {% get_current_language as LANGUAGE_CODE %}
@@ -55,12 +64,13 @@
                 </option>
                 {% endfor %}
             </select>
+<a href="{%url 'password-reset' %}">{% trans "Forgot Password" %}</a>
 </form>
 
 </div>
 
 <div class="hexagons">
-        <img src="{% static 'img/backgroud.gif' %}" height="100%" width="100%"/>
+        <img src="{% static 'img/backgroud.jpg' %}" height="100%" width="100%"/>
     </div>
 </section>
 
@@ -81,5 +91,22 @@
         myform.submit();
     }
 </script>
+
+
+<!-- Matomo -->
+<script type="text/javascript">
+  var _paq = window._paq || [];
+  /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+  _paq.push(['trackPageView']);
+  _paq.push(['enableLinkTracking']);
+  (function() {
+    var u="//193.112.194.114:8002/";
+    _paq.push(['setTrackerUrl', u+'matomo.php']);
+    _paq.push(['setSiteId', '1']);
+    var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+    g.type='text/javascript'; g.async=true; g.defer=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+  })();
+</script>
+<!-- End Matomo Code -->
 </body>
 </html>

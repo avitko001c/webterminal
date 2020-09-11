@@ -1,54 +1,61 @@
-# webterminal
-web terminal implemented by django.
+# Webterminal bastion server (瓦特堡垒机)
+[![EN doc](https://img.shields.io/badge/document-English-blue.svg)](README.md)
+[![CN doc](https://img.shields.io/badge/文档-中文版-blue.svg)](./doc/README-zh_cn.md)
+[![CNT doc](https://img.shields.io/badge/文檔-繁體版-blue.svg)](./doc/README-zht.md)
+
+
+Webterminal implemented by django.
 This project focus on DevOps and Continuous Delivery.
-For now it support almost 90% remote management protocol such as vnc, ssh,rdp,telnet... It support a possiblity to monitor and recorded user action when user use this project to manage their server!
-You can also replay the user action such as like a video.
+For now it support almost 90% remote management protocol such as vnc, ssh,rdp,telnet,sftp... It support a possiblity to monitor and recorded user action when user use this project to manage their server!You can also replay the user action such as like a video.
 Hope you enjoy it.
 
-本项目为django框架下实现！为实现自动运维化持续集成及集中化管理IT设备而创建。
+## Next Release: *To be defined, project will migrate to django 3*
+## This project is still under the development.
 
-现支持绝大多数网络远程管理协议(linux 下ssh、sftp协议、Windows rdp远程管理协议、Telnet远程管理协议及vnc远控协议)。
-
-用户使用此项目时全部操作将会被录像，在必要时可进行回放审计。另可实时监控用户操作，在必要时可强制将用户踢下线！
-
-更多功能请自行发掘......
-# useage (如何使用)
+# useage
 [![Usage Video](https://i.ytimg.com/vi/-HwhB21v8L8/1.jpg?time=1527217648531)](https://www.youtube.com/watch?v=-HwhB21v8L8)
 
 
 [How to use this project](./doc/usage_en.md)
 
-[中文使用文档](./doc/manual_zh.md)
-# Installiation guide (安装文档)
+
+# Installiation guide
 [installiation guide](./doc/install_en.md)
 
-[中文安装部署文档](./doc/Centos7_install_zh.md)
-# Run with docker (以docker方式运行本项目)
-[Centos7 Docker 部署 webterminal](./doc/Centos7_docker_deploy_zh.md)
+
+# Run with docker
+
 ```sh
-docker pull webterminal/webterminal (国内请使用阿里云镜像 docker pull registry.cn-hangzhou.aliyuncs.com/webterminal/webterminal)
-docker run -itd -p 80:80 webterminal/webterminal
+docker pull webterminal/webterminal
+docker run -itd -p 80:80 -p 2100:2100 webterminal/webterminal
 Login user & password
 username: admin
 password: password!23456
 ```
 # Demo server 
 
-[demo server](http://demo.ugeeke.com:8000/)
+[demo server](http://193.112.194.114:8000/)
 
 user/password: demo/demo12345678
 
 
 # Author Email
 zhengge2012@gmail.com
-# Discussion (For china)
-QQ群号 531612760
-
-![screenshots](./screenshots/qqgroupqr.png  "screenshots")
 
 # screenshots
 ![screenshots](./screenshots/screenshots1.png  "screenshots")
 ![screenshots](./screenshots/screenshots2.gif  "screenshots")
+# Ubuntu webterminal helper support
+![screenshots](./screenshots/screenshotslinux1.gif  "screenshots")
+![screenshots](./screenshots/screenshotslinux2.gif  "screenshots")
+# Mac webterminal helper support
+![screenshots](./screenshots/screenshotsmac.gif  "screenshots")
+# Windows webterminal helper support
+![screenshots](./screenshots/screenshots9.gif  "screenshots")
+# commercial version provide mstsc helper（rdp clipboard support vs file upload download and vnc protocol connection support）
+![screenshots](./screenshots/screenshotmstsc.gif  "screenshots")
+![screenshots](./screenshots/screenshotvnc.gif  "screenshots")
+
 ![screenshots](./screenshots/screenshots3.gif  "screenshots")
 ![screenshots](./screenshots/screenshots4.gif  "screenshots")
 ![screenshots](./screenshots/screenshots2.png  "screenshots")
@@ -65,14 +72,7 @@ QQ群号 531612760
 
 # License
 
-[License](LICENSE) 
+[GPL V3 License](LICENSE)
 
 # Reporting Issues
-If you're experiencing a problem, we encourage you to open an issue[an issue](https://github.com/jimmy201602/webterminal/issues/new) , and share your feedback.
-# Welcome donate(欢迎打赏)
-
-## wechat(微信)
-![screenshots](./screenshots/wechatpay.png  "wechat")
-
-## alipay(支付宝)
-![screenshots](./screenshots/alipay.png  "alipay")
+If you're experiencing a problem, we encourage you to open [an issue](https://github.com/jimmy201602/webterminal/issues/new), and share your feedback.

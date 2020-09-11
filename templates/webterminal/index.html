@@ -4,44 +4,84 @@
 {% load staticfiles %}
     {% block css %}
     <link rel="stylesheet" href="{% static 'plugins/xterm/xterm.css' %}"/>
+    <link rel="stylesheet" href="{% static 'plugins/xterm/addons/fullscreen/fullscreen.css' %}"/>
     <link rel="stylesheet" href="{% static 'plugins/jstree/themes/proton/style.min.css' %}"/>
     <link rel="stylesheet" href="{% static 'plugins/font-awesome/css/font-awesome.min.css' %}"/>
 <style>
-.ui-front {
-    /* make text editor to the front */
-    z-index: 9999 !important;
-}
+    .ui-front {
+        /* make text editor to the front */
+        z-index: 9999 !important;
+    }
+    .elfinder-bottomtray {
+        /* make text editor to the front */
+        z-index: 9999 !important;
+    }
+
+    .tab1 {
+       height: 800px;
+       border: 1px solid #ddd;
+       border-radius: 4px;
+     }
+
+     #tab1, #tab2 {
+       padding: 20px;
+     }
+
+     #tab1 p {
+       padding: 0;
+     }
+
+
+     .split p, .split-flex p {
+       padding: 20px;
+     }
+
+     .split, .split-flex {
+       -webkit-box-sizing: border-box;
+          -moz-box-sizing: border-box;
+               box-sizing: border-box;
+
+       overflow-y: auto;
+       overflow-x: hidden;
+     }
+
+     .gutter {
+       background-color: #eee;
+       background-repeat: no-repeat;
+       background-position: 50%;
+     }
+
+     .gutter.gutter-horizontal {
+       background-image: url('{% static "plugins/split.js/img/vertical.png"%}');
+       cursor: ew-resize;
+     }
+
+     .gutter.gutter-vertical {
+       background-image: url('{% static "plugins/split.js/img/horizontal.png"%}');
+       cursor: ns-resize;
+     }
+
+     .split.split-horizontal, .gutter.gutter-horizontal {
+       height: 100%;
+       float: left;
+     }
 </style>
 <link rel="stylesheet" type="text/css" href="{% static "plugins/jquery-ui/jquery-ui.min.css"%}">
 <!-- elFinder CSS (REQUIRED) -->
 <link rel="stylesheet" type="text/css" href="{% static "plugins/elfinder/css/elfinder.min.css"%}">
     {% endblock %}
 {% block content %}
-<div class="row ">
-    <div class="col-md-3" id="tab1">
-        <div class="portlet box box-success"  style="overflow:scroll;height: 800px;">
-            <div class="portlet-title">
-                <div class="caption">
-                    <a class="text-danger">{% trans 'Server List' %}</a>
-                </div>
-                <div class="tools">
-                    <a href="javascript:;" class="collapse" data-original-title="" title=""> </a>
-                    <a href="#portlet-config" data-toggle="modal" class="config" data-original-title="" title=""> </a>
-                    <a href="javascript:;" class="reload" data-original-title="" title=""> </a>
-                    <a href="javascript:;" class="remove" data-original-title="" title=""> </a>
-                </div>
-            </div>
-            <div class="portlet-body">
-                <form id="search">
-                    <input type="search" id="q" placeholder="{% trans 'search' %}"/>
-                    <button type="submit"><i class="fa fa-search"></i></button>
-                </form>
-                <div id="server_list" class="tree-demo" role="tree"></div>
-            </div>
+<div class="row tab1">
+    <div class="col-md-2 split split-horizontal" id="tab1">
+        <form id="search">
+        <div class="input-group">
+            <input type="search" id="q" placeholder="{% trans 'search' %}" class="form-control">
+            <span class="input-group-addon"><button type="submit"><i class="fa fa-search"></i></button></span>
         </div>
+        </form>
+        <div id="server_list" role="tree"></div>
     </div>
-    <div class="col-md-9" id="tab2">
-
+    <div class="col-md-10 split split-horizontal" id="tab2">
         <div class="span2 leftMenu">
             <ul class="nav nav-tabs marginBottom" id="myTab">
                 <li class="active ">
@@ -60,19 +100,24 @@
 {% block js %}
 <script src="{% static 'plugins/xterm/xterm.js' %}"></script>
 <script src="{% static 'plugins/xterm/addons/fit/fit.js' %}"></script>
+<script src="{% static 'plugins/xterm/addons/attach/attach.js' %}"></script>
 <script src="{% static 'plugins/xterm/addons/terminado/terminado.js' %}"></script>
 <script src="{% static 'plugins/xterm/addons/fullscreen/fullscreen.js' %}"></script>
+<script src="{% static 'plugins/zmodem/zmodem.js' %}"></script>
+<script src="{% static 'plugins/xterm/addons/zmodem/zmodem.js' %}"></script>
 <script src="{% static 'plugins/jstree/jstree.js' %}"></script>
 <script src="{% static "plugins/jquery-ui/jquery-ui.js"%}"></script>
 <!-- elFinder JS (REQUIRED) -->
 <script src="{% static "plugins/elfinder/js/elfinder.min.js"%}"></script>
-<script type="text/javascript" src="{% static 'plugins/guacamole/all.min.js' %}"></script>
 <!--Ace Editor -->
 <script type="text/javascript" src="{% static "plugins/ace/ace.js" %}"></script>
 <script type="text/javascript" src="{% static "plugins/ace/ext-modelist.js" %}"></script>
 <script type="text/javascript" src="{% static "plugins/ace/ext-settings_menu.js" %}"></script>
 <script type="text/javascript" src="{% static "plugins/ace/ext-language_tools.js" %}"></script>
-
+<!--split.js-->
+<script type="text/javascript" src="{% static "plugins/split.js/split.min.js" %}"></script>
+<script type="text/javascript" src="{% static "plugins/jquery.fullscreen/jquery.fullscreen.min.js" %}"></script>
+<script src="{% static 'plugins/bootbox/bootbox.js' %}"></script>
 <script type="application/javascript">
 
 
@@ -104,6 +149,7 @@
             if (protocol == 'ssh') {
                 var ws = terminals[tabContentId.substr(1)];
                 ws.send(JSON.stringify(['close']))
+                ws.close()
                 delete terminals[tabContentId.substr(1)];
             }
             $(this).parent().parent().remove(); //remove li of tab
@@ -140,8 +186,113 @@
     }
 
 </script>
+<script>
+    Split(['#tab1', '#tab2'], {
+        sizes: [15, 85],
+        minSize: 150
+    });
+</script>
 <script type="application/javascript">
     var terminals = new Object;
+    Terminal.applyAddon(fullscreen);
+    Terminal.applyAddon(fit);
+    Terminal.applyAddon(attach);
+    Terminal.applyAddon(zmodem);
+
+    function uploadfile(zsession) {
+        var uploadHtml = "<div>" +
+            "<label class='upload-area' style='width:100%;text-align:center;' for='fupload'>" +
+            "<input id='fupload' name='fupload' type='file' style='display:none;' multiple='true'>" +
+            "<i class='fa fa-cloud-upload fa-3x'></i>" +
+            "<br />" +
+            "Upload" +
+            "</label>" +
+            "<br />" +
+            "<span style='margin-left:5px !important;' id='fileList'></span>" +
+            "</div><div class='clearfix'></div>";
+
+        bootbox.dialog({
+            message: uploadHtml,
+            title: "File Upload",
+            buttons: {
+                success: {
+                    label: "Upload",
+                    className: "btn-success",
+                    callback: function (res) {
+                        // what you wanna do here ...
+                        console.log('success')
+                    }
+                },
+                cancel: {
+                    label: 'Cancel',
+                    className: 'btn-default',
+                    callback: function (res) {
+                        // what you wanna do here ...
+                        console.log('cancel')
+                    }
+                }
+            },
+            closeButton: false
+        });
+
+        // var fileList = ;
+        // fileList.addEventListener("change", function (e) {
+        //     var list = "";
+        //     for (var i = 0; i < this.files.length; i++) {
+        //         list += this.files[i].name
+        //     }
+        //
+        //     $("#fileList").text(list);
+        // }, false);
+        var file_el = document.getElementById("fupload");
+
+        function _hide_progress(){
+            console.log(11);
+        }
+
+        function _show_progress(){
+            console.log(222);
+        }
+
+        function _update_progress(xfer){
+            console.log(333,xfer);
+        }
+
+
+        var promise = new Promise( (res) => {
+            file_el.onchange = function(e) {
+                var files_obj = file_el.files;
+
+                    Zmodem.Browser.send_files(
+                        zsession,
+                        files_obj,
+                        {
+                            on_offer_response(obj, xfer) {
+                                if (xfer) _show_progress();
+                                console.log("offer", xfer ? "accepted" : "skipped");
+                            },
+                            on_progress(obj, xfer) {
+                                _update_progress(xfer);
+                            },
+                            on_file_complete(obj) {
+                                console.log("COMPLETE", obj);
+                               // _hide_progress();
+                            },
+                        }
+                    ).then(_hide_progress).then(
+                        zsession.close.bind(zsession),
+                        console.error.bind(console)
+                    ).then( () => {
+                        //_hide_file_info();
+                        //_hide_progress();
+                        res();
+                    } );
+            };
+        } );
+
+        return promise;
+    };
+
     function make_terminal(element, size, ws_url, ip, id) {
         var term = new Terminal({
             cols: size.cols,
@@ -151,44 +302,129 @@
             cursorBlink: true,  // Blink the terminal's cursor
         });
         term.open(element, false);
+        term.fit();
         term.focus();
+        //term.toggleFullScreen(true);
+
+
+        function _save_to_disk(xfer, buffer) {
+            return Zmodem.Browser.save_to_disk(buffer, xfer.get_details().name);
+        };
+
+        function _handle_receive_session(zsession) {
+            zsession.on("offer", function(xfer) {
+                current_receive_xfer = xfer;
+
+                function on_form_submit() {
+                    var FILE_BUFFER = [];
+                    xfer.on("input", (payload) => {
+                        //_update_progress(xfer);
+                        FILE_BUFFER.push( new Uint8Array(payload) );
+                    });
+                    xfer.accept().then(
+                        () => {
+                            _save_to_disk(xfer, FILE_BUFFER);
+                        },
+                        console.error.bind(console)
+                    );
+                };
+
+                on_form_submit();
+
+            } );
+
+            var promise = new Promise( (res) => {
+                zsession.on("session_end", () => {
+                    res();
+                    console.log('session end');
+                } );
+            } );
+
+            zsession.start();
+
+            return promise;
+        };
+
         var ws = new WebSocket(ws_url);
+
+        term.on("zmodemDetect", (detection) => {
+                term.detach();
+                let zsession = detection.confirm();
+
+                var promise;
+
+                if (zsession.type === "receive") {
+                    promise = _handle_receive_session(zsession);
+                }else {
+                    promise = uploadfile(zsession);
+                }
+
+                promise.catch( console.error.bind(console) ).then( () => {
+                    term.attach(ws);
+                } );
+        });
+
+        function resize_terminal(term) {
+            if (term) {
+
+                if ((document.documentElement.clientHeight - ($(".split-horizontal").height() - $("#"+element.id).height() + $(".leftMenu").height() + $(".navbar-static-top").height() -2 )) >= $(".split-horizontal").height()){
+                    var rows = parseInt($(".split-horizontal").height()/17)-2;
+                }else {
+                    var rows = parseInt((document.documentElement.clientHeight - 27 - $(".leftMenu").height() - $(".navbar-static-top").height() -2)/17);
+                }
+
+                //var rows = parseInt((document.documentElement.clientHeight - ($(".split-horizontal").height() - $("#"+element.id).height()) - $(".leftMenu").height() - $(".navbar-static-top").height() -2)/17);
+                var cols = parseInt($(".marginBottom").width()/9);
+                // console.log(rows,cols,size)
+                //console.log(rows,cols,(document.documentElement.clientHeight - ($(".split-horizontal").height() - $("#"+element.id).height() + $(".leftMenu").height() + $(".navbar-static-top").height() -2 )),$(".split-horizontal").height())
+                term.resize(cols, rows);
+                ws.send(JSON.stringify(["set_size",rows, cols, cols, rows]));
+            }
+        }
+
         ws.onopen = function (event) {
             terminals[element.id] = ws;
             //set terminal width and height
-            term.fit();
-            <!--ws.send(JSON.stringify(["set_size", size.rows, size.cols,-->
-                <!--term.cols, term.rows]));-->
-            term.resize(term.cols, term.rows);
-            ws.send(JSON.stringify(["ip", ip,term.cols, term.rows, id]));
-            term.on('data', function (data) {
-                <!--console.log(data);-->
-                ws.send(JSON.stringify(['stdin', data]));
-            });
+            //zmodem attach
+
+            //calculate terminal size
+
+            if ((document.documentElement.clientHeight - ($(".split-horizontal").height() - $("#"+element.id).height() + $(".leftMenu").height() + $(".navbar-static-top").height() -2 )) >= $(".split-horizontal").height()){
+                var rows = parseInt($(".split-horizontal").height()/17)-2;
+            }else {
+                var rows = parseInt((document.documentElement.clientHeight - 27 - $(".leftMenu").height() - $(".navbar-static-top").height() -2)/17)-2;
+            }
+            var cols = parseInt($(".marginBottom").width()/9);
+
+            term.resize(cols, rows);
+            ws.send(JSON.stringify(["ip", ip,cols, rows, id]));
+            ws.send(JSON.stringify(["set_size",rows, cols,
+                cols, rows]));
+
+            //set terminal fit resize function
+            // term.on('resize', function (size) {
+            //   ws.send(JSON.stringify(["set_size", size.rows, size.cols]));
+            // });
 
             term.on('title', function (title) {
                 document.title = title;
             });
 
-            term.toggleFullscreen(true);
-            ws.onmessage = function (event) {
-                json_msg = JSON.parse(event.data);
-                switch (json_msg[0]) {
-                    case "stdout":
-                        term.write(json_msg[1]);
-                        break;
-                    case "disconnect":
-                        term.write("{% trans '\r\n\r\n[Finished...]\r\n' %}");
-                        break;
-                    case "channel_name":
-                        <!--console.log(json_msg[1]);-->
-                        var channel_name_attribute = document.createAttribute('channel_name')
-                        channel_name_attribute.value = json_msg[1];
-                        element.setAttributeNode(channel_name_attribute)
-                        break;
+            //attach websocket to terminal
+            term.attach(ws);
+            term._initialized = true;
+
+            term.zmodemAttach(ws, {
+                noTerminalWriteOutsideSession: true,
+            } );
+
+            $(window).resize(function(){
+                if (term) {
+                    resize_terminal(term);
                 }
-            };
+            });
         };
+
         return {socket: ws, term: term};
     }
 
@@ -212,7 +448,11 @@
                         {% for server in server_group.servers.all %}
                             {
                                 text: "{{ server.name }} {{ server.ip }} {{ server.hostname }}",
-                                icon: "fa fa-server",
+                                {% if server.credential.protocol == 'rdp' %}
+                                icon: "fa fa-windows",
+                                {% else %}
+                                icon: "fa fa-linux",
+                                {% endif %}
                                 ip: "{{ server.ip }}",
                                 id: "{{ server.getrandomid }}",
                                 oid: "{{ server.id }}",
@@ -259,7 +499,7 @@
                                     registerCloseEvent('ssh');
                                     var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
                                     var ws_path = ws_scheme + '://' + window.location.host + '/ws/';
-                                    make_terminal(document.getElementById(tabId), {rows: 38, cols: 90}, ws_path, ip, id);
+                                    make_terminal(document.getElementById(tabId), {rows: 43, cols: 90}, ws_path, ip, id);
                                 }else {
                                     showTab(tabId);
                                 }
@@ -267,7 +507,7 @@
                                 if ($("#"+tabId).length <= 0){
                                     $('.nav-tabs').append('<li><a href="#' + tabId + '"><button class="close closeTab" type="button" >×</button>' + tabtext + '</a></li>');
                                     <!--$('.tab-content').append('<div class="tab-pane responsive" id="' + tabId + '"></div>');-->
-                                    $('.tab-content').append('<div class="tab-pane responsive" id="' +tabId + '"><iframe src="/guacamole/' + id +'/" frameborder="0" scrolling="no" onload="this.height=780;this.width=1030;this.contentWindow.focus();" onmouseover="this.contentWindow.focus();"></iframe>'+ '</div>');
+                                    $('.tab-content').append('<div class="tab-pane responsive" id="' +tabId + '"><iframe src="/guacamole/' + id +'/" frameborder="0" style="width: 100%;" scrolling="no" onload="this.height=780;this.height=this.contentWindow.document.documentElement.scrollHeight;this.contentWindow.focus();" onmouseover="this.contentWindow.focus();"></iframe>'+ '</div>');
                                     showTab(tabId);
                                     registerCloseEvent('none');
                                     <!--var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";-->
@@ -592,6 +832,5 @@
                 }
             });
     }
-    $("#tab1,#tab2").resizable();
 </script>
 {% endblock %}

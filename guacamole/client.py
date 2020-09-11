@@ -4,8 +4,6 @@ The MIT License (MIT)
 Copyright (c)   2014 rescale
                 2014 - 2016 Mohab Usama
 """
-from builtins import str
-from builtins import object
 
 import socket
 import logging
@@ -16,7 +14,7 @@ from .instruction import INST_TERM
 from .instruction import GuacamoleInstruction as Instruction
 
 # supported protocols
-PROTOCOLS = ('vnc', 'rdp', 'ssh','telnet')
+PROTOCOLS = ('vnc', 'rdp', 'ssh', 'telnet')
 
 PROTOCOL_NAME = 'guacamole'
 
@@ -25,6 +23,13 @@ BUF_LEN = 4096
 guac_logger = logging.getLogger(__name__)
 guac_logger.setLevel(logging.INFO)
 guac_logger.handlers = [logging.StreamHandler()]
+
+import sys
+if sys.version_info.major == 3:
+    python3 = True
+else:
+    python3 = False
+
 
 class GuacamoleClient(object):
     """Guacamole Client class."""
@@ -98,7 +103,10 @@ class GuacamoleClient(object):
         start = 0
 
         while True:
-            idx = self._buffer.find(INST_TERM, start)
+            if python3:
+                idx = self._buffer.find(INST_TERM.encode(), start)
+            else:
+                idx = self._buffer.find(INST_TERM, start)
             if idx != -1:
                 # instruction was fully received!
                 line = str(self._buffer[:idx + 1])
@@ -122,14 +130,18 @@ class GuacamoleClient(object):
         Send encoded instructions to Guacamole guacd server.
         """
         self.logger.debug('Sending data: %s' % data)
-        self.client.sendall(data)
+        if python3 and isinstance(data, str):
+            self.client.sendall(data.encode())
+        else:
+            self.client.sendall(data)
 
     def read_instruction(self):
         """
         Read and decode instruction.
         """
         self.logger.debug('Reading instruction.')
-        return Instruction.load(self.receive())
+        data = self.receive()
+        return Instruction.load(data)
 
     def send_instruction(self, instruction):
         """
@@ -195,7 +207,8 @@ class GuacamoleClient(object):
             kwargs.get(arg.replace('-', '_'), '') for arg in instruction.args
         ]
 
-        self.logger.debug('Send `connect` instruction (%s)' % connection_args)
+        self.logger.debug('Send `connect` instruction (%s)' %
+                          connection_args)
         self.send_instruction(Instruction('connect', *connection_args))
 
         # 5. Receive ``ready`` instruction, with client ID.

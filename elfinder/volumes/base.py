@@ -1,18 +1,22 @@
-from __future__ import division
-from builtins import str
-from builtins import object
-from past.utils import old_div
 import os, datetime, mimetypes, re, inspect, time, logging
 try:
     from PIL import Image
 except ImportError:
     import Image
 from base64 import b64encode, b64decode
+try:
+    from string import maketrans
+except ImportError:
+    maketrans = getattr(bytes,'maketrans')
 from tarfile import TarFile
 from django.core.cache import cache
 from django.utils.translation import ugettext_lazy as _
 from elfinder.exceptions import ElfinderErrorMessages, FileNotFoundError, DirNotFoundError, PermissionDeniedError, NamedError, NotAnImageError
 from elfinder.utils.archivers import ZipFileArchiver
+try:
+    unicode
+except NameError:
+    unicode = str
 
 class ElfinderVolumeDriver(object):
     """
@@ -199,7 +203,7 @@ class ElfinderVolumeDriver(object):
         else:
             raise Exception(_('No volume id found'))
         
-        self._root = self._normpath(str(self._options['path']))
+        self._root = self._normpath(unicode(self._options['path']))
         self._separator = self._options['separator'] if 'separator' in self._options else os.sep
 
         #default file attribute
@@ -406,7 +410,8 @@ class ElfinderVolumeDriver(object):
         mimes = mimes if mimes else self._options['onlyMimes']
         if not mimes:
             return empty
-
+        if isinstance(mime,bytes):
+            mime = mime.decode()
         return mime == 'directory' or 'all' in mimes or 'All' in mimes or mime in mimes or mime[0:mime.find('/')] in mimes
     
     def is_readable(self):
@@ -577,12 +582,12 @@ class ElfinderVolumeDriver(object):
             if s[0] > tmb_size and s[1] > tmb_size:
                 resized = self._img_resize(im, None, tmb_size, tmb_size, True, False, 'png')
                 s = resized.size
-                self._img_crop(resized, tmb, tmb_size, tmb_size, int(old_div((s[0] - tmb_size),2)), int(old_div((s[1] - tmb_size),2)), 'png')
+                self._img_crop(resized, tmb, tmb_size, tmb_size, int((s[0] - tmb_size)/2), int((s[1] - tmb_size)/2), 'png')
             else:
                 fit = self._img_square_fit(im, None, s[0] if s[0] > s[1] else s[1], s[0] if s[0] > s[1] else s[1], self._options['tmbBgColor'], 'png')
                 self._img_crop(fit, tmb, tmb_size, tmb_size, 
-                    int(old_div((s[0] - tmb_size),2)) if s[0] > tmb_size else 0,
-                    int(old_div((s[1] - tmb_size),2)) if s[1] > tmb_size else 0, 'png')
+                    int((s[0] - tmb_size)/2) if s[0] > tmb_size else 0,
+                    int((s[1] - tmb_size)/2) if s[1] > tmb_size else 0, 'png')
         else:
             try:
                 im.thumbnail((tmb_size, tmb_size), Image.ANTIALIAS)
@@ -678,6 +683,8 @@ class ElfinderVolumeDriver(object):
             raise NamedError(ElfinderErrorMessages.ERROR_EXISTS, name)
         except os.error:
             pass
+        except Exception:
+            pass
     
         self._clear_cached_dir(path)
 
@@ -713,6 +720,8 @@ class ElfinderVolumeDriver(object):
             self.stat(self._join_path(dir_, name))
             raise NamedError(ElfinderErrorMessages.ERROR_EXISTS, name)
         except os.error:
+            pass
+        except:
             pass
 
         self._rm_tmb(file_) #remove old name tmbs, we cannot do this after dir move
@@ -994,7 +1003,7 @@ class ElfinderVolumeDriver(object):
                 raise PermissionDeniedError
 
             path = self.decode(hash_)
-            if 'dir' not in vars():
+            if not 'dir' in vars().keys():
                 dir_ = self._dirname(path)
                 stat = self.stat(dir_)
                 if not stat['write']:
@@ -1103,14 +1112,14 @@ class ElfinderVolumeDriver(object):
             hash_ = self._crypt(p)
             #hash is used as id in HTML that means it must contain vaild chars
             #make base64 html safe and append prefix in begining
-            hash_ = hash_.encode('utf-8') # unicode filename support
-            hash_ = b64encode(hash_).translate(str.maketrans('+/=', '-_.'))
+            hash_ = hash_.encode('utf-8','ignore') # unicode filename support
+            hash_ = b64encode(hash_).translate(maketrans(b'+/=', b'-_.'))
 
             #remove dots '.' at the end (used to be '=' in base64, before the translation)
-            hash_ = hash_.rstrip('.')
+            hash_ = hash_.rstrip(b'.')
 
             #append volume id to make hash unique
-            return self.id()+hash_
+            return self.id()+hash_.decode()
     
     def decode(self, hash_):
         """
@@ -1120,9 +1129,9 @@ class ElfinderVolumeDriver(object):
             #cut volume id after it was prepended in encode
             h = hash_[len(self.id()):]
             #replace HTML safe base64 to normal
-            h = h.encode('ascii').translate(str.maketrans('-_.', '+/='))
+            h = h.encode('ascii').translate(maketrans(b'-_.', b'+/='))
             #put cut = at the end
-            h += "=" * ((4 - len(h) % 4) % 4)
+            h += b"=" * ((4 - len(h) % 4) % 4)
             h = b64decode(h)
             h = h.decode('utf-8') # unicode filename support
 
@@ -1201,7 +1210,9 @@ class ElfinderVolumeDriver(object):
                 else: #file
                     if not 'tmb' in stat and self._can_create_tmb(path, stat):
                         stat['tmb'] = self._get_tmb(stat['target'] if 'target' in stat else path, stat)
-                    if not 'dim' in stat and stat['mime'].startswith('image'):
+                    if isinstance(stat['mime'],str):
+                        stat['mime'] = stat['mime'].encode()
+                    if not 'dim' in stat and stat['mime'].decode().startswith('image'):
                         try:
                             stat['dim'] = self._dimensions(path)
                         except NotAnImageError:
@@ -1218,7 +1229,9 @@ class ElfinderVolumeDriver(object):
             #     self.logger.debug('%s: Caching STAT %s' % (self.id(), path))
             # if root_cache != self._root:
             #     cache.set('elfinder::stat::%sroot' % self.id(), self._root, 60 * 60 * 24 * 10)
-        
+        #bug need to be fixed
+        if isinstance(stat_cache['mime'],bytes):
+            stat_cache['mime'] = stat_cache['mime'].decode()
         return stat_cache
     
     def mimetype(self, path, name = ''):
@@ -1230,7 +1243,6 @@ class ElfinderVolumeDriver(object):
 
         if not mime or mime in ['inode/x-empty', 'application/empty']:
             int_mime = mimetypes.guess_type(name if name else path)[0]
-                
         return int_mime if int_mime else mime
     
     def _attr(self, path, attr, val=False):
@@ -1481,7 +1493,6 @@ class ElfinderVolumeDriver(object):
                 path = self._save(fp, dst, name)
                 volume.close(fp, src)
             except:
-                raise
                 raise NamedError(ElfinderErrorMessages.ERROR_COPY, errpath)
         
         self._clear_cached_dir(dst)
@@ -1554,7 +1565,10 @@ class ElfinderVolumeDriver(object):
         """
         Return True if thumnbnail for required file can be created.
         """
-        return self._tmb_path_writable and not path.startswith(self._options['tmbPath']) and stat['mime'].startswith('image') 
+        if isinstance(stat['mime'],bytes):
+            return self._tmb_path_writable and not path.startswith(self._options['tmbPath']) and stat['mime'].decode().startswith('image')
+        else:
+            return self._tmb_path_writable and not path.startswith(self._options['tmbPath']) and stat['mime'].startswith('image')
 
     def _img_resize(self, im, target, width, height, keepProportions = False, resizeByBiggerSide = True, destformat = None):
         """
@@ -1583,7 +1597,7 @@ class ElfinderVolumeDriver(object):
                 size_h = orig_h * width / orig_w
                 size_w = width
 
-        resized = im.resize((size_w, size_h), Image.ANTIALIAS)
+        resized = im.resize((int(size_w), int(size_h)), Image.ANTIALIAS)
         
         if target:
             self._saveimage(resized, target, destformat if destformat else im.format)
@@ -1605,9 +1619,9 @@ class ElfinderVolumeDriver(object):
         bg = Image.new('RGB', (width, height), bgcolor)
 
         if im.mode == 'RGBA':
-            bg.paste(im, (old_div((width-im.size[0]),2), old_div((height-im.size[1]),2)), im)
+            bg.paste(im, ((width-im.size[0])/2, (height-im.size[1])/2), im)
         else: #do not use a mask if file is not in RGBA mode.
-            bg.paste(im, (old_div((width-im.size[0]),2), old_div((height-im.size[1]),2)))
+            bg.paste(im, ((width-im.size[0])/2, (height-im.size[1])/2))
 
         if target:
             self._saveimage(bg, target, destformat if destformat else im.format)
@@ -1670,7 +1684,7 @@ class ElfinderVolumeDriver(object):
         
         #manualy add archivers
         if 'create' in self._options['archivers']:
-            for mime, archiver in list(self._options['archivers']['create'].items()):
+            for mime, archiver in self._options['archivers']['create'].items():
                 try:
                     conf = archiver['archiver']
                     archiver['ext']
@@ -1681,7 +1695,7 @@ class ElfinderVolumeDriver(object):
                     self._archivers['create'][mime] = archiver
 
         if 'extract' in self._options['archivers']:
-            for mime, archiver in list(self._options['archivers']['extract'].items()):
+            for mime, archiver in self._options['archivers']['extract'].items():
                 try:
                     conf = archiver['archiver']
                     archiver['ext']

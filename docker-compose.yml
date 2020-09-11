@@ -5,12 +5,15 @@ services:
     container_name: webterminal
     ports:
       - "80:80"
+      - "2100:2100"
     networks:
       - public
       - private
     volumes:
-      - /var/log:/var/log
-    #command: ["sh","/docker-entrypoint.sh","start"]
+      #- "/var/log:/var/log"
+      - "/etc/localtime:/etc/localtime:ro"
+      - "/etc/timezone:/etc/timezone:ro"
+    restart: always
 networks:
   public:
     driver: bridge
